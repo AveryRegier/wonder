@@ -5,32 +5,38 @@
 #include <time.h>
 #include <dos.h>
 
-main(void)
-{
-	int driver, mode;
-	int startx, starty, endx, endy;
-	int repeat, now;
-	int addsx, addsy, addex, addey;
-	int sign, num;
-	int ch;
-	unsigned int msec;
-	int bk;
-	int stover, rstover;
-	int col;
-	int max,addx,addy;
-     int space;
-	int errorcode;
-     int full;
-     float maxx, maxy, xratio, yratio;
+int kaleid(void);
+int intro(void);
+int write_default(void);
+int get_default(void);
 
-	int intro(void);
+unsigned int msec;
+int bk, col;
+int space;
+int full;
+int stover = 0;
+int max, addx, addy;
+float xratio, yratio;
+int maxcolor;
+
+int main(void)
+{
+	int driver, mode, errorcode;
+	int n;
+     char *ch;
+     float maxx, maxy;
+
+     /* Set all default parameters */
+     if(get_default()){
+		msec = 0;
+		bk = 1;
+		space = 4;
+     	full = 0;
+	}
+
      intro();
 
-	msec=0;
-	bk=1;
-	stover=0;
-	space=3;
-
+     /* Initialize Graphics */
 	driver = DETECT;
 	mode = 0;
 	initgraph(&driver, &mode, "");
@@ -42,7 +48,7 @@ main(void)
 
 	maxx = getmaxx();
 	maxy = getmaxy();
-	full = 1;
+	maxcolor = getmaxcolor();
 
 	if(maxx>maxy) {
 		max=maxy;
@@ -59,159 +65,12 @@ main(void)
 		yratio = (maxy+1) / (maxx+1);
 	}
 
-	#define MAX max
-	#define MAXCOLOR getmaxcolor()+1
-	#define ADDX addx
-	#define ADDY addy
-	#define XRATIO xratio
-	#define YRATIO yratio
-
-     restorecrtmode();
-	printf("xratio = %f, yratio = %f, addx = %d", XRATIO, YRATIO, addx);
-	getch();
-	setgraphmode(getgraphmode());
-
 	randomize();
-     col=random(MAXCOLOR);
-	for(;;) {
-		if(ch=='b' || ch=='c' || ch=='f' || ch=='i') {
-			setbkcolor(random(bk));
-		}
-		loop:
-		rstover=random(20+space);
-		moveto(random(MAX), random(MAX));
-		startx=getx();
-		starty=gety();
-		endx=startx+random(5);
-		endy=starty+random(5);
-		do {
-			for(num=0; num<5; num++) {
-				sign=random(2);
-				if(sign==0) sign=-1;
-				switch(num) {
-					case 0:
-						addsx=random(space)*sign;
-						break;
-					case 1:
-						addsy=random(space)*sign;
-						break;
-					case 2:
-						addex=random(space)*sign;
-						break;
-					case 3:
-						addey=random(space)*sign;
-						break;
-					case 4:
-						setcolor(col+sign*random(3));
-						break;
-				}
-			}
-			repeat=random(20);
-			for(now=1; now<repeat; now++) {
-				if(startx>=MAX || endx>=MAX || starty>=MAX || endy>=MAX || startx<=0 || starty <=0 || endx <=0 || endy<=0) {
-					stover++;
-					if(stover>=rstover) {
-						cleardevice();
-						stover=0;
-						setbkcolor(random(bk));
-                         	col=random(MAXCOLOR);
-                         }
-					goto loop;
-				}
-				if(full){
-					line(XRATIO*startx, YRATIO*starty, XRATIO*endx, YRATIO*endy);
-					line(XRATIO*(MAX-startx), YRATIO*(MAX-starty), XRATIO*(MAX-endx), YRATIO*(MAX-endy));
-					line(XRATIO*starty, YRATIO*startx, XRATIO*endy, YRATIO*endx);
-					line(XRATIO*(MAX-starty), YRATIO*(MAX-startx), XRATIO*(MAX-endy), YRATIO*(MAX-endx));
-					line(XRATIO*startx, YRATIO*(MAX-starty), XRATIO*endx, YRATIO*(MAX-endy));
-					line(XRATIO*(MAX-startx), YRATIO*starty, XRATIO*(MAX-endx), YRATIO*endy);
-					line(XRATIO*starty, YRATIO*(MAX-startx), XRATIO*endy, YRATIO*(MAX-endx));
-					line(XRATIO*(MAX-starty), YRATIO*startx, XRATIO*(MAX-endy), YRATIO*endx);
-				}else{
-					line(startx+ADDX, starty+ADDY, endx+ADDX, endy+ADDY);
-					line((MAX-startx)+ADDX, (MAX-starty)+ADDY, (MAX-endx)+ADDX, (MAX-endy)+ADDY);
-					line(starty+ADDX, startx+ADDY, endy+ADDX, endx+ADDY);
-					line((MAX-starty)+ADDX, (MAX-startx)+ADDY, (MAX-endy)+ADDX, (MAX-endx)+ADDY);
-					line(startx+ADDX, (MAX-starty)+ADDY, endx+ADDX, (MAX-endy)+ADDY);
-					line((MAX-startx)+ADDX, starty+ADDY, (MAX-endx)+ADDX, endy+ADDY);
-					line(starty+ADDX, (MAX-startx)+ADDY, endy+ADDX, (MAX-endx)+ADDY);
-					line((MAX-starty)+ADDX, (startx+ADDY), (MAX-endy)+ADDX, endx+ADDY);
-				}
+	col=random(maxcolor);
+     setbkcolor(random(bk));
 
-				delay(msec);
-				startx+=addsx;
-				starty+=addsy;
-				endx+=addex;
-				endy+=addey;
-			}
-		} while(!kbhit());
-		ch=getch();
-		switch(ch) {
-          	case 75:
-				if(space>2){
-					space-=1;
-				} else{
-					sound(440);
-					delay(100);
-					nosound();
-				}
-				break;
-			case 77:
-				if(space<=10){
-					space+=1;
-				} else{
-					sound(440);
-					delay(100);
-					nosound();
-				}
-				break;
-			default:
-				ch=tolower(ch);
-				switch(ch) {
-					case '0':
-					case '1':
-					case '2':
-					case '3':
-					case '4':
-					case '5':
-					case '6':
-					case '7':
-					case '8':
-					case '9':
-						msec=(ch-48)*5;
-						break;
-					case 'b':
-						if(bk==1) bk=MAXCOLOR;
-						else bk=1;
-						break;
-					case 'p':
-						getch();
-						break;
-					case 'h':
-						restorecrtmode();
-						intro();
-						setgraphmode(getgraphmode());
-						break;
-					case 'd':
-						bk=1;
-						space=3;
-						msec=0;
-						setbkcolor(0);
-						break;
-					case 'f':
-						if(full) full = 0;
-						else full = 1;
-                         case 'c':
-						cleardevice();
-						stover=0;
-						break;
-					case 0x1b:
-						restorecrtmode();
-						return 0;
-				}
-				break;
-		}
-	}
+     for(;;) if(!kaleid()) break;
+	return 0;
 }
 
 int intro(void)
@@ -220,18 +79,17 @@ int intro(void)
 
 	clrscr();
 	printf("                                WONDER\n\r");
-	printf("                              Version 4.0\n\r");
+	printf("                              Version 5.0\n\r");
 	printf("                            Copyright 1993\n\r");
 	printf("                             Avery Regier\n\r");
 	printf("                           cAVEman Software\n\r\n");
 	printf("               If you enjoy this program, let me know!!\n\r");
 	printf("               Send your name, address, and comments to:\n\r");
 	printf("                           3311 6th Avenue\n\r");
-	printf("                        Sioux City, IA  51106\n\r");
-	printf("                       Compuserve [71214,1301]\n\r\n");
+	printf("                        Sioux City, IA  51106\n\r\n\n");
 	printf("               'B'         toggles background\n\r");
 	printf("               'C'         clears the screen and starts over\n\r");
-	printf("               'D'         set options to default\n\r");
+	printf("               'D'         set default parameters\n\r");
 	printf("               'F'         toggles full screen mode\n\r");
 	printf("               'H'         this screen\n\r");
 	printf("               'P'         pauses the screen\n\r");
@@ -243,4 +101,195 @@ int intro(void)
 	ch=getch();
 	if(ch==0x1b) exit(0);
 	return 0;
+}
+
+int write_default(void)
+{
+	FILE *fp;
+
+	if((fp = fopen("wonder.def", "wt"))==NULL){
+		printf("write_default unsuccessful");
+		return 1;
+	}
+
+	fprintf(fp, "%d\n", full);
+	fprintf(fp, "%d\n", space);
+	fprintf(fp, "%d\n", bk);
+	fprintf(fp, "%d\n", msec/5);
+	fclose(fp);
+	return 0;
+}
+
+int get_default(void)
+{
+	FILE *fp;
+	char *ch;
+
+	if((fp = fopen("wonder.def", "rt"))==NULL){
+		return 1;
+	}
+     fseek(fp, 0, 0);
+	fgets(ch, 3, fp);
+	full = atoi(ch);
+	fgets(ch, 4, fp);
+	space = atoi(ch);
+	fgets(ch, 4, fp);
+	bk = atoi(ch);
+	fgets(ch, 4, fp);
+     msec = atoi(ch)*5;
+
+	fclose(fp);
+	return 0;
+}
+
+int start_over(void)
+{
+	cleardevice();
+	stover = 0;
+	setbkcolor(random(bk));
+	col = random(maxcolor);
+	return 0;
+}
+
+int kaleid()
+{
+     int startx, starty, endx, endy;
+	int addsx, addsy, addex, addey;
+	int repeat, now, rstover;
+	int sign, num;
+	int ch;
+
+	rstover=random(30+space);
+	moveto(random(max), random(max));
+	startx=getx();
+	starty=gety();
+	endx=startx;
+	endy=starty;
+	for(;;) {
+		for(num=0; num<5; num++) {
+			sign=random(2);
+			if(sign==0) sign=-1;
+			switch(num) {
+				case 0:
+					addsx=random(space)*sign;
+					break;
+				case 1:
+					addsy=random(space)*sign;
+					break;
+				case 2:
+					addex=random(space)*sign;
+					break;
+				case 3:
+					addey=random(space)*sign;
+					break;
+				case 4:
+					setcolor(col+sign*random(3));
+					break;
+			}
+		}
+		repeat=random(20);
+		for(now=1; now<repeat; now++) {
+          	/* CHECK BORDERS */
+			if(startx>max || endx>max || starty>max || endy>max || startx<0 || starty <0 || endx <0 || endy<0) {
+				stover++;
+				if(stover>=rstover) {
+					start_over();
+				}
+				return 1;
+			}
+			/* WRITE LINES TO SCREEN */
+			if(full){
+               	/* FULL SCREEN MODE */
+				line(xratio*startx, yratio*starty, xratio*endx, yratio*endy);
+				line(xratio*(max-startx), yratio*(max-starty), xratio*(max-endx), yratio*(max-endy));
+				line(xratio*starty, yratio*startx, xratio*endy, yratio*endx);
+				line(xratio*(max-starty), yratio*(max-startx), xratio*(max-endy), yratio*(max-endx));
+				line(xratio*startx, yratio*(max-starty), xratio*endx, yratio*(max-endy));
+				line(xratio*(max-startx), yratio*starty, xratio*(max-endx), yratio*endy);
+				line(xratio*starty, yratio*(max-startx), xratio*endy, yratio*(max-endx));
+				line(xratio*(max-starty), yratio*startx, xratio*(max-endy), yratio*endx);
+			}else{
+               	/* LARGEST POSSIBLE SQUARE MODE */
+				line(startx+addx, starty+addy, endx+addx, endy+addy);
+				line((max-startx)+addx, (max-starty)+addy, (max-endx)+addx, (max-endy)+addy);
+				line(starty+addx, startx+addy, endy+addx, endx+addy);
+				line((max-starty)+addx, (max-startx)+addy, (max-endy)+addx, (max-endx)+addy);
+				line(startx+addx, (max-starty)+addy, endx+addx, (max-endy)+addy);
+				line((max-startx)+addx, starty+addy, (max-endx)+addx, endy+addy);
+				line(starty+addx, (max-startx)+addy, endy+addx, (max-endx)+addy);
+				line((max-starty)+addx, (startx+addy), (max-endy)+addx, endx+addy);
+			}
+			delay(msec);
+			startx+=addsx;
+			starty+=addsy;
+			endx+=addex;
+			endy+=addey;
+		}
+		if(kbhit()) {
+			ch=getch();
+			switch(ch) {
+				case 75:
+					if(space>2){
+						space-=1;
+					} else{
+						sound(440);
+						delay(100);
+						nosound();
+					}
+					break;
+				case 77:
+					if(space<9){
+						space+=1;
+					} else{
+						sound(440);
+						delay(100);
+						nosound();
+					}
+					break;
+				default:
+					ch=tolower(ch);
+					switch(ch) {
+						case '0':
+						case '1':
+						case '2':
+						case '3':
+						case '4':
+						case '5':
+						case '6':
+						case '7':
+						case '8':
+						case '9':
+							msec=(ch-48)*5;
+							break;
+						case 'b':
+							if(bk==1) bk=16;
+							else bk=1;
+							setbkcolor(random(bk));
+							break;
+						case 'p':
+							getch();
+							break;
+						case 'h':
+							restorecrtmode();
+							intro();
+							setgraphmode(getgraphmode());
+							start_over();
+                                   return 1;
+						case 'd':
+							write_default();
+							break;
+						case 'f':
+							if(full) full = 0;
+							else full = 1;
+						case 'c':
+							start_over();
+                                   return 1;
+						case 0x1b:
+							restorecrtmode();
+							return 0;
+					}
+					break;
+			}
+		}
+	}
 }
