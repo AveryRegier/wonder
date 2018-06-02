@@ -20,8 +20,10 @@ main(void)
 	int max,addx,addy;
      int space;
 	int errorcode;
-	int intro(void);
+     int full;
+     float maxx, maxy, xratio, yratio;
 
+	int intro(void);
      intro();
 
 	msec=0;
@@ -38,26 +40,41 @@ main(void)
 		exit(1);
 	}
 
-	if(getmaxx()>getmaxy()) {
-		max=getmaxy();
-		addx=(getmaxx()-getmaxy())/2;
+	maxx = getmaxx();
+	maxy = getmaxy();
+	full = 1;
+
+	if(maxx>maxy) {
+		max=maxy;
+		addx=(maxx-maxy)/2;
 		addy=0;
+		xratio = (maxx+1) / (maxy+1);
+		yratio = 1;
 	}
 	else {
-		max=getmaxx();
+		max=maxx;
 		addx=0;
-          	addy=(getmaxy()-getmaxx())/2;
+		addy=(maxy-maxx)/2;
+		xratio = 1;
+		yratio = (maxy+1) / (maxx+1);
 	}
 
 	#define MAX max
 	#define MAXCOLOR getmaxcolor()+1
 	#define ADDX addx
-     	#define ADDY addy
+	#define ADDY addy
+	#define XRATIO xratio
+	#define YRATIO yratio
+
+     restorecrtmode();
+	printf("xratio = %f, yratio = %f, addx = %d", XRATIO, YRATIO, addx);
+	getch();
+	setgraphmode(getgraphmode());
 
 	randomize();
      col=random(MAXCOLOR);
 	for(;;) {
-		if(ch=='b' || ch=='c' || ch=='B' || ch=='C' || ch=='I' || ch=='i') {
+		if(ch=='b' || ch=='c' || ch=='f' || ch=='i') {
 			setbkcolor(random(bk));
 		}
 		loop:
@@ -65,8 +82,8 @@ main(void)
 		moveto(random(MAX), random(MAX));
 		startx=getx();
 		starty=gety();
-		endx=startx;
-		endy=starty;
+		endx=startx+random(5);
+		endy=starty+random(5);
 		do {
 			for(num=0; num<5; num++) {
 				sign=random(2);
@@ -101,14 +118,26 @@ main(void)
                          }
 					goto loop;
 				}
-				line(startx+ADDX, starty+ADDY, endx+ADDX, endy+ADDY);
-				line(MAX-startx+ADDX, MAX-starty+ADDY, MAX-endx+ADDX, MAX-endy+ADDY);
-				line(starty+ADDX, startx+ADDY, endy+ADDX, endx+ADDY);
-				line(MAX-starty+ADDX, MAX-startx+ADDY, MAX-endy+ADDX, MAX-endx+ADDY);
-				line(startx+ADDX, MAX-starty+ADDY, endx+ADDX, MAX-endy+ADDY);
-				line(MAX-startx+ADDX, starty+ADDY, MAX-endx+ADDX, endy+ADDY);
-				line(starty+ADDX, MAX-startx+ADDY, endy+ADDX, MAX-endx+ADDY);
-				line(MAX-starty+ADDX, startx+ADDY, MAX-endy+ADDX, endx+ADDY);
+				if(full){
+					line(XRATIO*startx, YRATIO*starty, XRATIO*endx, YRATIO*endy);
+					line(XRATIO*(MAX-startx), YRATIO*(MAX-starty), XRATIO*(MAX-endx), YRATIO*(MAX-endy));
+					line(XRATIO*starty, YRATIO*startx, XRATIO*endy, YRATIO*endx);
+					line(XRATIO*(MAX-starty), YRATIO*(MAX-startx), XRATIO*(MAX-endy), YRATIO*(MAX-endx));
+					line(XRATIO*startx, YRATIO*(MAX-starty), XRATIO*endx, YRATIO*(MAX-endy));
+					line(XRATIO*(MAX-startx), YRATIO*starty, XRATIO*(MAX-endx), YRATIO*endy);
+					line(XRATIO*starty, YRATIO*(MAX-startx), XRATIO*endy, YRATIO*(MAX-endx));
+					line(XRATIO*(MAX-starty), YRATIO*startx, XRATIO*(MAX-endy), YRATIO*endx);
+				}else{
+					line(startx+ADDX, starty+ADDY, endx+ADDX, endy+ADDY);
+					line((MAX-startx)+ADDX, (MAX-starty)+ADDY, (MAX-endx)+ADDX, (MAX-endy)+ADDY);
+					line(starty+ADDX, startx+ADDY, endy+ADDX, endx+ADDY);
+					line((MAX-starty)+ADDX, (MAX-startx)+ADDY, (MAX-endy)+ADDX, (MAX-endx)+ADDY);
+					line(startx+ADDX, (MAX-starty)+ADDY, endx+ADDX, (MAX-endy)+ADDY);
+					line((MAX-startx)+ADDX, starty+ADDY, (MAX-endx)+ADDX, endy+ADDY);
+					line(starty+ADDX, (MAX-startx)+ADDY, endy+ADDX, (MAX-endx)+ADDY);
+					line((MAX-starty)+ADDX, (startx+ADDY), (MAX-endy)+ADDX, endx+ADDY);
+				}
+
 				delay(msec);
 				startx+=addsx;
 				starty+=addsy;
@@ -118,7 +147,7 @@ main(void)
 		} while(!kbhit());
 		ch=getch();
 		switch(ch) {
-          		case 75:
+          	case 75:
 				if(space>2){
 					space-=1;
 				} else{
@@ -151,10 +180,6 @@ main(void)
 					case '9':
 						msec=(ch-48)*5;
 						break;
-					case 'c':
-						cleardevice();
-						stover=0;
-						break;
 					case 'b':
 						if(bk==1) bk=MAXCOLOR;
 						else bk=1;
@@ -173,6 +198,13 @@ main(void)
 						msec=0;
 						setbkcolor(0);
 						break;
+					case 'f':
+						if(full) full = 0;
+						else full = 1;
+                         case 'c':
+						cleardevice();
+						stover=0;
+						break;
 					case 0x1b:
 						restorecrtmode();
 						return 0;
@@ -188,10 +220,10 @@ int intro(void)
 
 	clrscr();
 	printf("                                WONDER\n\r");
-	printf("                              Version 3.0\n\r");
+	printf("                              Version 4.0\n\r");
 	printf("                            Copyright 1993\n\r");
 	printf("                             Avery Regier\n\r");
-	printf("                           cAVEman Software\n\r\n\n");
+	printf("                           cAVEman Software\n\r\n");
 	printf("               If you enjoy this program, let me know!!\n\r");
 	printf("               Send your name, address, and comments to:\n\r");
 	printf("                           3311 6th Avenue\n\r");
@@ -200,6 +232,7 @@ int intro(void)
 	printf("               'B'         toggles background\n\r");
 	printf("               'C'         clears the screen and starts over\n\r");
 	printf("               'D'         set options to default\n\r");
+	printf("               'F'         toggles full screen mode\n\r");
 	printf("               'H'         this screen\n\r");
 	printf("               'P'         pauses the screen\n\r");
 	printf("               '0'-'9'     sets the speed (0 is maximum speed)\n\r");
